@@ -1,0 +1,45 @@
+[
+  {
+    "agency_id": "acme_gyms",
+    "name": "Acme Marketing for Gyms",
+    "physical_address": "123 Main St, Austin, TX 78701",
+    "brand_voice": {
+      "tone": "energetic, direct",
+      "formality": "casual",
+      "forbidden_words": ["leverage", "synergy", "unlock", "elevate", "robust"],
+      "preferred_closings": ["Talk soon", "Cheers"],
+      "brand_story": "We help local gyms 2x member retention with SMS campaigns."
+    },
+    "messages_sent_total": 850,
+    "status": "active"
+  },
+  {
+    "agency_id": "lawyer_growth_co",
+    "name": "Lawyer Growth Co",
+    "physical_address": "500 Market St, Philadelphia, PA 19102",
+    "brand_voice": {
+      "tone": "professional, measured",
+      "formality": "formal",
+      "forbidden_words": ["hack", "guru", "ninja", "disrupt"],
+      "preferred_closings": ["Best regards", "Appreciate your time"],
+      "brand_story": "Helping personal injury law firms fill their intake pipeline."
+    },
+    "messages_sent_total": 1200,
+    "status": "active"
+  },
+  {
+    "agency_id": "spammy_test_co",
+    "name": "Spammy Test Co (kill switch demo)",
+    "physical_address": null,
+    "brand_voice": {
+      "tone": "aggressive",
+      "formality": "casual",
+      "forbidden_words": [],
+      "preferred_closings": ["Buy now"],
+      "brand_story": "We sell stuff."
+    },
+    "messages_sent_total": 15000,
+    "status": "paused",
+    "pause_reason": "spam_complaint_threshold_exceeded"
+  }
+]

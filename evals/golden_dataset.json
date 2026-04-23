@@ -1,0 +1,82 @@
+[
+  {
+    "contact_id": "c_001",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "approve_or_revise",
+    "expected_block_reason": null,
+    "note": "Happy path: US, consented, rich LinkedIn signal."
+  },
+  {
+    "contact_id": "c_002",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "approve_or_revise",
+    "expected_block_reason": null,
+    "note": "Happy path: US, founder, strong trigger event."
+  },
+  {
+    "contact_id": "c_003",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "approve_or_revise",
+    "expected_block_reason": null,
+    "note": "Happy path: US gym expansion."
+  },
+  {
+    "contact_id": "c_004",
+    "agency_id": "lawyer_growth_co",
+    "channel": "email",
+    "expected_decision": "approve_or_revise",
+    "expected_block_reason": null,
+    "note": "Happy path: US PI managing partner."
+  },
+  {
+    "contact_id": "c_006",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "block",
+    "expected_block_reason": "missing_gdpr_legal_basis",
+    "note": "EU without GDPR basis must block."
+  },
+  {
+    "contact_id": "c_007",
+    "agency_id": "lawyer_growth_co",
+    "channel": "email",
+    "expected_decision": "block",
+    "expected_block_reason": "missing_gdpr_legal_basis",
+    "note": "EU law partner without GDPR basis."
+  },
+  {
+    "contact_id": "c_009",
+    "agency_id": "lawyer_growth_co",
+    "channel": "email",
+    "expected_decision": "block",
+    "expected_block_reason": "contact_opted_out",
+    "note": "Opted-out contact — sender must refuse."
+  },
+  {
+    "contact_id": "c_011",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "block",
+    "expected_block_reason": "per_contact_daily_cap",
+    "note": "Recently contacted (<24h) — rate limiter must block."
+  },
+  {
+    "contact_id": "c_004",
+    "agency_id": "lawyer_growth_co",
+    "channel": "sms",
+    "expected_decision": "block",
+    "expected_block_reason": "missing_tcpa_consent",
+    "note": "SMS to US contact without TCPA consent must block."
+  },
+  {
+    "contact_id": "c_012",
+    "agency_id": "acme_gyms",
+    "channel": "email",
+    "expected_decision": "approve_or_revise_with_low_confidence",
+    "expected_block_reason": null,
+    "note": "Student/job-seeker — researcher should emit low confidence."
+  }
+]
