@@ -12,16 +12,31 @@ how a VP of Sales thinks about their org: Researcher, Copywriter, Compliance
 Reviewer, Ops Sender. The hierarchical process gives the manager LLM real
 delegation and retry behavior — the same thing a sales manager does with an SDR.
 
-## Setup (3 commands)
+## Setup (local, 3 commands)
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # fill OPENAI_API_KEY + ANTHROPIC_API_KEY
+cp .env.example .env   # fill at least one of OPENAI_API_KEY / ANTHROPIC_API_KEY
 streamlit run app.py
 ```
 
 Model IDs are in `.env` — the `DRAFTER_MODEL` defaults to
 `claude-sonnet-4-5-20250929`; `claude-sonnet-4-6` is a drop-in replacement.
+
+## Setup (Streamlit Cloud)
+
+1. Deploy the app with `app.py` as the entrypoint and the
+   `claude/setup-crewai-sales-33hzJ` branch.
+2. Click **Manage app → Settings → Secrets** and paste the contents of
+   [`.streamlit/secrets.toml.example`](./.streamlit/secrets.toml.example),
+   replacing the `REPLACE_ME` placeholders with real keys.
+3. Reboot the app.
+
+The sidebar shows which providers are configured. If you only supply one key,
+model routing automatically collapses to that provider so the demo still runs.
+
+You can also paste keys directly into the sidebar for a one-off session — they
+live in the process env only and are never written to disk.
 
 ## Architecture
 

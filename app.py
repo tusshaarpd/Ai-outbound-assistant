@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
+import config  # imports secrets_loader → promotes st.secrets into env
 from evals import offline_eval, online_metrics
 from guardrails import kill_switch
 from guardrails.rate_limiter import bucket_status
@@ -15,6 +16,47 @@ from memory.db import connect, init_db
 
 st.set_page_config(page_title="Outbound Sales Crew", layout="wide")
 init_db()
+
+# --- Sidebar: API key status + quick-add for the current session ---
+with st.sidebar:
+    st.subheader("API keys")
+    providers = config.configured_providers()
+    if providers:
+        st.success(f"Configured: {', '.join(providers)}")
+    else:
+        st.warning(
+            "No provider keys detected. Set them in Streamlit secrets "
+            "(`Manage app → Secrets`) or paste below for this session only."
+        )
+
+    with st.expander("Add / override keys for this session", expanded=not providers):
+        st.caption(
+            "Stored in process env only — never written to disk. "
+            "For persistent keys on Streamlit Cloud, use "
+            "`Manage app → Secrets` with the same variable names."
+        )
+        openai_in = st.text_input(
+            "OPENAI_API_KEY",
+            value="",
+            type="password",
+            placeholder="sk-...",
+            help="Used by Researcher + Sender (cheap, high-volume tool calls).",
+        )
+        anthropic_in = st.text_input(
+            "ANTHROPIC_API_KEY",
+            value="",
+            type="password",
+            placeholder="sk-ant-...",
+            help="Used by Drafter (Sonnet) + Reviewer + Manager (Opus).",
+        )
+        if st.button("Apply keys", use_container_width=True):
+            import os
+            if openai_in:
+                os.environ["OPENAI_API_KEY"] = openai_in
+            if anthropic_in:
+                os.environ["ANTHROPIC_API_KEY"] = anthropic_in
+            st.success("Applied. Reload the page to recompute model routing.")
+            st.rerun()
 
 TAB_NAMES = [
     "Live Crew Run",

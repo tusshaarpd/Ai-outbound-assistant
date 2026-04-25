@@ -12,6 +12,7 @@ env/
 # Env + secrets
 .env
 .env.local
+.streamlit/secrets.toml
 
 # Local DB (regenerated from seed JSON)
 data/outbound.db
