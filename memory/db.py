@@ -70,7 +70,9 @@ def connect():
 
 
 def init_db() -> None:
-    """Create schema and load seed data if tables are empty."""
+    """Create schema and load seed data if tables are empty.
+    Always refresh the rolling demo events so the rate-limit demo stays valid
+    no matter how long the DB file has been around."""
     with connect() as conn:
         conn.executescript(SCHEMA)
         cur = conn.cursor()
@@ -80,7 +82,7 @@ def init_db() -> None:
         cur.execute("SELECT COUNT(*) FROM contacts")
         if cur.fetchone()[0] == 0:
             _load_contacts(conn)
-            _seed_recent_events(conn)
+        _refresh_recent_events(conn)
 
 
 def _load_agencies(conn: sqlite3.Connection) -> None:
@@ -132,20 +134,37 @@ def _load_contacts(conn: sqlite3.Connection) -> None:
         )
 
 
-def _seed_recent_events(conn: sqlite3.Connection) -> None:
-    """For contacts whose seed marks last_contacted='RECENT', log a real event
-    in the history table 2h ago so the rate limiter finds it."""
+SEED_RECENT_PAYLOAD = '{"_seed_recent": true}'
+
+
+def _refresh_recent_events(conn: sqlite3.Connection) -> None:
+    """Re-stamp the rolling demo 'recent send' events to 2h ago, every time the
+    DB is opened. Without this the seed rots — yesterday's '2h ago' is more
+    than 24h ago today, and the per_contact_daily_cap demo silently breaks.
+
+    Identifies seed events by a sentinel payload so we never touch real sends.
+    """
     from datetime import datetime, timedelta
+
     rows = conn.execute(
-        "SELECT contact_id FROM contacts WHERE last_contacted = 'RECENT'"
+        """SELECT contact_id FROM contacts
+           WHERE last_contacted = 'RECENT' OR quality_note = 'rate_limited'"""
     ).fetchall()
+    if not rows:
+        return
+
     two_h_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat(sep=" ")
     for r in rows:
+        # Drop any existing seed event for this contact, then insert a fresh one.
+        conn.execute(
+            "DELETE FROM contact_history WHERE contact_id = ? AND payload = ?",
+            (r["contact_id"], SEED_RECENT_PAYLOAD),
+        )
         conn.execute(
             """INSERT INTO contact_history
                (contact_id, agency_id, timestamp, event_type, payload)
-               VALUES (?, ?, ?, 'sent', '{}')""",
-            (r["contact_id"], "acme_gyms", two_h_ago),
+               VALUES (?, 'acme_gyms', ?, 'sent', ?)""",
+            (r["contact_id"], two_h_ago, SEED_RECENT_PAYLOAD),
         )
         conn.execute(
             "UPDATE contacts SET last_contacted = ? WHERE contact_id = ?",
