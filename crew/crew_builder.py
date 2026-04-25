@@ -6,7 +6,7 @@ contacts, rate-limited contacts, and paused agencies without spending LLM calls.
 """
 from crewai import Crew, Process
 
-from config import CREWAI_VERBOSE
+from config import CREWAI_VERBOSE, HAS_OPENAI
 from crew.agents import drafter, manager_llm, researcher, reviewer, sender
 from crew.tasks import build_tasks
 from guardrails.preflight import preflight_guardrails
@@ -16,12 +16,14 @@ __all__ = ["build_crew", "run_outbound", "preflight_guardrails"]
 
 def build_crew(contact_id: str, agency_id: str, channel: str = "email") -> Crew:
     tasks = build_tasks(contact_id, agency_id, channel)
+    # CrewAI's built-in memory uses ChromaDB with an OpenAI embedder by default.
+    # Without an OpenAI key, Chroma init fails — disable memory in that case.
     return Crew(
         agents=[researcher, drafter, reviewer, sender],
         tasks=tasks,
         process=Process.hierarchical,
         manager_llm=manager_llm,
-        memory=True,
+        memory=HAS_OPENAI,
         cache=True,
         max_rpm=30,
         verbose=CREWAI_VERBOSE,

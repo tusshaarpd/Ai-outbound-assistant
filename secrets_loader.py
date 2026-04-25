@@ -53,3 +53,14 @@ def load_streamlit_secrets() -> dict:
 
 # Run on import.
 PROMOTED = load_streamlit_secrets()
+
+
+def _alias_chroma_key() -> None:
+    """CrewAI's built-in memory uses ChromaDB, which needs its own env var
+    for OpenAI embeddings. Alias from OPENAI_API_KEY so users don't have
+    to set the same key twice."""
+    if os.environ.get("OPENAI_API_KEY") and not os.environ.get("CHROMA_OPENAI_API_KEY"):
+        os.environ["CHROMA_OPENAI_API_KEY"] = os.environ["OPENAI_API_KEY"]
+
+
+_alias_chroma_key()
