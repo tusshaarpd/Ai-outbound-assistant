@@ -17,46 +17,41 @@ from memory.db import connect, init_db
 st.set_page_config(page_title="Outbound Sales Crew", layout="wide")
 init_db()
 
-# --- Sidebar: API key status + quick-add for the current session ---
+# --- Sidebar: OpenAI API key status + quick-add for the current session ---
 with st.sidebar:
-    st.subheader("API keys")
-    providers = config.configured_providers()
-    if providers:
-        st.success(f"Configured: {', '.join(providers)}")
+    st.subheader("OpenAI API key")
+    has_openai = config.HAS_OPENAI
+    if has_openai:
+        st.success("OpenAI key configured")
     else:
         st.warning(
-            "No provider keys detected. Set them in Streamlit secrets "
-            "(`Manage app → Secrets`) or paste below for this session only."
+            "No OpenAI key detected. Paste one below for this session, "
+            "or set `OPENAI_API_KEY` under Streamlit `Manage app → Secrets`."
         )
 
-    with st.expander("Add / override keys for this session", expanded=not providers):
+    with st.expander("Add / override key for this session", expanded=not has_openai):
         st.caption(
             "Stored in process env only — never written to disk. "
             "For persistent keys on Streamlit Cloud, use "
-            "`Manage app → Secrets` with the same variable names."
+            "`Manage app → Secrets` with variable name `OPENAI_API_KEY`."
         )
         openai_in = st.text_input(
             "OPENAI_API_KEY",
             value="",
             type="password",
             placeholder="sk-...",
-            help="Used by Researcher + Sender (cheap, high-volume tool calls).",
+            help="Powers all 4 agents in OpenAI-only mode.",
         )
-        anthropic_in = st.text_input(
-            "ANTHROPIC_API_KEY",
-            value="",
-            type="password",
-            placeholder="sk-ant-...",
-            help="Used by Drafter (Sonnet) + Reviewer + Manager (Opus).",
-        )
-        if st.button("Apply keys", use_container_width=True):
+        if st.button("Apply key", use_container_width=True):
             import os
             if openai_in:
                 os.environ["OPENAI_API_KEY"] = openai_in
-            if anthropic_in:
-                os.environ["ANTHROPIC_API_KEY"] = anthropic_in
-            st.success("Applied. Reload the page to recompute model routing.")
-            st.rerun()
+                # Re-alias so CrewAI's ChromaDB memory picks it up.
+                os.environ["CHROMA_OPENAI_API_KEY"] = openai_in
+                st.success("Applied. Reload the page to recompute model routing.")
+                st.rerun()
+            else:
+                st.error("Paste a key first.")
 
 TAB_NAMES = [
     "Live Crew Run",
