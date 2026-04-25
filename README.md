@@ -16,27 +16,25 @@ delegation and retry behavior — the same thing a sales manager does with an SD
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # fill at least one of OPENAI_API_KEY / ANTHROPIC_API_KEY
+cp .env.example .env   # fill OPENAI_API_KEY
 streamlit run app.py
 ```
 
-Model IDs are in `.env` — the `DRAFTER_MODEL` defaults to
-`claude-sonnet-4-5-20250929`; `claude-sonnet-4-6` is a drop-in replacement.
+This deploy is **OpenAI-only** — every agent routes to a `gpt-*` model.
+`OPENAI_API_KEY` is the only provider key required.
 
 ## Setup (Streamlit Cloud)
 
 1. Deploy the app with `app.py` as the entrypoint and the
    `claude/setup-crewai-sales-33hzJ` branch.
-2. Click **Manage app → Settings → Secrets** and paste the contents of
-   [`.streamlit/secrets.toml.example`](./.streamlit/secrets.toml.example),
-   replacing the `REPLACE_ME` placeholders with real keys.
+2. Click **Manage app → Settings → Secrets** and paste:
+   ```toml
+   OPENAI_API_KEY = "sk-..."
+   ```
 3. Reboot the app.
 
-The sidebar shows which providers are configured. If you only supply one key,
-model routing automatically collapses to that provider so the demo still runs.
-
-You can also paste keys directly into the sidebar for a one-off session — they
-live in the process env only and are never written to disk.
+You can also paste a key directly into the sidebar for a one-off session — it
+lives in the process env only and is never written to disk.
 
 ## Architecture
 
@@ -49,13 +47,19 @@ live in the process env only and are never written to disk.
 | Evals | `evals/` | Offline golden dataset + online KPI aggregator |
 | UI | `app.py` | 6-tab Streamlit demo |
 
-## Model routing (why each pick)
+## Model routing (OpenAI-only)
 
 - Researcher → `gpt-4o-mini` — high-volume, low-stakes enrichment.
-- Drafter → Claude Sonnet — more human voice, fewer AI-tells.
-- Reviewer → Claude Opus — compliance firewall; pay for best judgment.
-- Manager → Claude Opus — reasoning-heavy orchestration.
+- Drafter → `gpt-4o` — quality writing.
+- Reviewer → `gpt-4o` — compliance firewall; pay for best judgment.
+- Manager → `gpt-4o` — reasoning-heavy orchestration.
 - Sender → `gpt-4o-mini` — mostly deterministic tool-calling.
+
+The original spec routes Drafter/Reviewer/Manager through Anthropic
+(Sonnet/Opus). That dual-provider routing is preserved in `git log` — the
+deployed app collapses to a single provider for simplicity. To switch to
+Anthropic, restore the Anthropic LLM instances in `crew/agents.py` and add
+`ANTHROPIC_API_KEY` to your environment.
 
 ## Guardrails are NOT agents
 

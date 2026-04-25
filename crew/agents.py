@@ -1,5 +1,7 @@
-"""Four agents + manager LLM. Role/goal/backstory copy is intentional —
-it is the product's differentiator per spec Part 1."""
+"""Four agents + manager LLM. OpenAI-only deploy — no Anthropic dependency.
+
+Role/goal/backstory copy is intentional — it is the product's differentiator
+per spec Part 1. Model assignment per agent is centralized in config.py."""
 from crewai import Agent, LLM
 
 from config import (
@@ -8,6 +10,7 @@ from config import (
     MANAGER_MODEL,
     RESEARCHER_MODEL,
     REVIEWER_MODEL,
+    SENDER_MODEL,
 )
 from tools.brand_voice_tool import BrandVoiceTool
 from tools.calendar_tool import CalendarTool
@@ -16,11 +19,12 @@ from tools.crm_tool import CRMReadTool
 from tools.email_tool import EmailSendTool
 from tools.linkedin_tool import LinkedInProfileTool
 
-# ========== LLM configs ==========
+# ========== LLM configs (all OpenAI) ==========
 researcher_llm = LLM(model=RESEARCHER_MODEL, temperature=0.2)
 drafter_llm = LLM(model=DRAFTER_MODEL, temperature=0.7)
 reviewer_llm = LLM(model=REVIEWER_MODEL, temperature=0.1)
 manager_llm = LLM(model=MANAGER_MODEL, temperature=0.3)
+sender_llm = LLM(model=SENDER_MODEL, temperature=0.0)
 
 # ========== 1. RESEARCHER ==========
 researcher = Agent(
@@ -109,7 +113,7 @@ sender = Agent(
         "send as if the platform's reputation depends on it — because it does."
     ),
     tools=[EmailSendTool(), CalendarTool()],
-    llm=researcher_llm,  # Cheap model; this agent is mostly tool-calling
+    llm=sender_llm,
     allow_delegation=False,
     verbose=CREWAI_VERBOSE,
     max_iter=2,

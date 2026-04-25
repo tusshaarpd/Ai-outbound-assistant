@@ -1,12 +1,7 @@
 """Central config: env vars, model IDs, guardrail thresholds, paths.
 
-API keys are sourced in this order:
-1. Streamlit Cloud `st.secrets` (promoted into os.environ by secrets_loader)
-2. Local `.env` file (loaded by python-dotenv)
-3. Process env vars
-
-If only ONE provider key is present, model routing collapses to that provider
-so the demo still runs with a single API key.
+OpenAI-only deploy: the only API key required is OPENAI_API_KEY. Anthropic
+is intentionally not supported here — every agent routes to an OpenAI model.
 """
 import os
 from pathlib import Path
@@ -23,51 +18,35 @@ SEED_CONTACTS = DATA_DIR / "seed_contacts.json"
 SEED_AGENCIES = DATA_DIR / "seed_agencies.json"
 GOLDEN_DATASET = ROOT / "evals" / "golden_dataset.json"
 
-# --- API keys ---
+# --- API key ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-
 HAS_OPENAI = bool(OPENAI_API_KEY) and not OPENAI_API_KEY.startswith("sk-...")
-HAS_ANTHROPIC = bool(ANTHROPIC_API_KEY) and not ANTHROPIC_API_KEY.startswith("sk-ant-...")
 
-# --- Model routing ---
-# Default routing (spec Part 2) requires both providers. If only one key is
-# present, every agent routes to the available provider. Users can still pin
-# specific model IDs via env / secrets — those wins.
-
-_DEFAULT_OPENAI_CHEAP = "gpt-4o-mini"
-_DEFAULT_OPENAI_SMART = "gpt-4o"
-_DEFAULT_ANTHROPIC_SONNET = "claude-sonnet-4-5-20250929"
-_DEFAULT_ANTHROPIC_OPUS = "claude-opus-4-7"
+# --- Model routing (OpenAI-only) ---
+# All four agents route to OpenAI. Researcher + Sender use a cheap model
+# because they're high-volume and tool-calling. Drafter + Reviewer + Manager
+# use a smart model because they need quality judgment / orchestration.
+_OPENAI_CHEAP = "gpt-4o-mini"
+_OPENAI_SMART = "gpt-4o"
 
 
-def _route(role_default: str, openai_only: str, anthropic_only: str) -> str:
-    """Pick a model ID based on which providers are configured."""
-    if HAS_OPENAI and HAS_ANTHROPIC:
-        return role_default
-    if HAS_OPENAI:
-        return openai_only
-    if HAS_ANTHROPIC:
-        return anthropic_only
-    return role_default  # No keys: keep the default; app will surface a banner.
+def _model_or(env_var: str, default: str) -> str:
+    """Honor an explicit override only if it's an OpenAI model. Silently
+    drop any non-OpenAI override (e.g. stale claude-* values from older
+    .env / secrets.toml templates) so we never call a provider we can't auth."""
+    val = os.getenv(env_var)
+    if not val:
+        return default
+    if val.startswith(("gpt-", "o1-", "o3-", "o4-", "openai/")):
+        return val
+    return default
 
 
-RESEARCHER_MODEL = os.getenv(
-    "RESEARCHER_MODEL",
-    _route(_DEFAULT_OPENAI_CHEAP, _DEFAULT_OPENAI_CHEAP, _DEFAULT_ANTHROPIC_SONNET),
-)
-DRAFTER_MODEL = os.getenv(
-    "DRAFTER_MODEL",
-    _route(_DEFAULT_ANTHROPIC_SONNET, _DEFAULT_OPENAI_SMART, _DEFAULT_ANTHROPIC_SONNET),
-)
-REVIEWER_MODEL = os.getenv(
-    "REVIEWER_MODEL",
-    _route(_DEFAULT_ANTHROPIC_OPUS, _DEFAULT_OPENAI_SMART, _DEFAULT_ANTHROPIC_OPUS),
-)
-MANAGER_MODEL = os.getenv(
-    "MANAGER_MODEL",
-    _route(_DEFAULT_ANTHROPIC_OPUS, _DEFAULT_OPENAI_SMART, _DEFAULT_ANTHROPIC_OPUS),
-)
+RESEARCHER_MODEL = _model_or("RESEARCHER_MODEL", _OPENAI_CHEAP)
+DRAFTER_MODEL = _model_or("DRAFTER_MODEL", _OPENAI_SMART)
+REVIEWER_MODEL = _model_or("REVIEWER_MODEL", _OPENAI_SMART)
+MANAGER_MODEL = _model_or("MANAGER_MODEL", _OPENAI_SMART)
+SENDER_MODEL = _model_or("SENDER_MODEL", _OPENAI_CHEAP)
 
 # --- Rate limits (spec Part 6.1) ---
 RATE_LIMITS = {
@@ -95,9 +74,4 @@ CREWAI_VERBOSE = os.getenv("CREWAI_VERBOSE", "true").lower() == "true"
 
 
 def configured_providers() -> list[str]:
-    out: list[str] = []
-    if HAS_OPENAI:
-        out.append("openai")
-    if HAS_ANTHROPIC:
-        out.append("anthropic")
-    return out
+    return ["openai"] if HAS_OPENAI else []
